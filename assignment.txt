@@ -1,0 +1,158 @@
+Introduction
+Welcome to one of the most practical AI engineering projects you'll build: a production-ready, multi-agent code review system powered by the Claude Agent SDK.
+
+The Scenario: You've just joined DevFlow, a fast-growing startup that's scaling rapidly. Your engineering team is drowning in pull request reviews. Senior developers spend 30% of their time reviewing code, creating a bottleneck that slows down the entire development pipeline. Your tech lead has tasked you with building an AI-powered solution that can provide comprehensive, automated code reviews—freeing up senior engineers to focus on architecture and mentorship.
+
+Your Goal: Build a multi-agent system where specialized AI agents work together to analyze pull requests from multiple angles—code quality, test coverage, and refactoring opportunities—then synthesize their findings into a polished, actionable report.
+
+The Challenge
+Manual code reviews are:
+
+Time-consuming: A thorough review of a 500-line PR can take 30-60 minutes
+Inconsistent: Different reviewers catch different issues
+Limited in scope: Humans often focus on logic, missing security or performance issues
+Your task is to build a system that:
+
+Fetches pull request data from GitHub using MCP (Model Context Protocol)
+Dispatches three specialized subagents to analyze code
+Aggregates their insights into a unified, validated report
+Outputs professional HTML/Markdown/JSON reports
+Your Product
+The final system architecture:
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    MAIN ORCHESTRATOR                            │
+│         (Coordinates analysis, aggregates results)              │
+└───────────────────────────┬─────────────────────────────────────┘
+                            │
+        ┌───────────────────┼───────────────────┐
+        ▼                         ▼                         ▼
+┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+│ Code Quality  │        │ Test Coverage │        │  Refactoring  │
+│   Analyzer    │        │   Analyzer    │        │   Suggester   │
+│               │        │               │        │               │
+│ • Security    │        │ • Coverage    │        │ • Patterns    │
+│ • Performance │        │ • Test gaps   │        │ • Modernize   │
+│ • Best practs │        │ • Assertions  │        │ • Clean code  │
+└───────────────┘   └───────────────┘   └───────────────┘
+        │                   │                   │
+        └───────────────────┼───────────────────┘
+                                   ▼
+              ┌─────────────────────────┐
+              │   ReviewReport (JSON)   │
+              │   ─────────────────     │
+              │   • File-by-file        │
+              │   • Aggregated scores   │
+              │   • Recommendations     │
+              └─────────────────────────┘
+                                   │
+        ┌───────────────────┼───────────────────┐
+        ▼                   ▼                   ▼
+   [report.md]        [report.html]       [report.json]
+Key Technologies:
+
+Claude Agent SDK: Orchestrates agents and handles tool execution
+MCP (Model Context Protocol): Integrates GitHub API and ESLint via standardized protocol
+Zod: Runtime validation of structured outputs
+TypeScript: Type-safe development
+Claude Skills: Reusable domain expertise for specialized code analysis
+Deliverables
+Your submission must include all of the following:
+
+1. MCP Configuration (src/config/mcp.config.ts)
+Configure two MCP servers for external tool integration:
+
+GitHub MCP server - Enables fetching PR data and repository information
+ESLint MCP server - Provides code linting and style analysis capabilities
+2. Three Specialized Subagents (src/agents/)
+Code Quality Analyzer (code-quality-analyzer.ts)
+
+Analyzes code for security vulnerabilities, performance issues, and maintainability concerns
+Configured with appropriate tools for reading and analyzing code files
+Integrates Claude Skills for specialized code analysis (e.g., javascript-best-practices, security-analysis)
+Test Coverage Analyzer (test-coverage-analyzer.ts)
+
+Identifies functions/methods without test coverage
+Suggests specific test cases with meaningful assertions
+Estimates coverage percentage and prioritizes critical untested paths
+Refactoring Suggester (refactoring-suggester.ts)
+
+Identifies opportunities to apply design patterns and modern language features
+Suggests extract method/class candidates
+Identifies dead code or redundant logic
+Each agent must:
+
+Be defined using the AgentDefinition type with clear descriptions
+Set model: 'inherit' to use the orchestrator's model
+Include only the tools necessary for its specific role
+Include the Skill tool to invoke Claude skills
+3. Prompt Engineering (src/prompts/)
+Create targeted prompts for:
+
+Orchestrator prompt (orchestrator.prompt.ts) - Instructs the main agent to fetch PR data and coordinate subagent execution
+Code Quality prompt (code-quality-analyzer.prompt.ts) - Specifies security, performance, and best practice evaluation criteria
+Test Coverage prompt (test-coverage-analyzer.prompt.ts) - Defines test completeness assessment approach
+Refactoring prompt (refactoring-suggester.prompt.ts) - Outlines architectural improvement identification
+Each prompt must:
+
+Explicitly instruct the agent on its specific focus area
+Reference the expected output structure (Zod schema requirements)
+Provide clear guidance on when and how to leverage Claude Skills
+4. Main Orchestrator (src/orchestrator.ts)
+Implement the orchestration logic using Claude Agent SDK's query method:
+
+Configure with MCP servers (GitHub and ESLint)
+Include the Task tool for spawning subagents
+Register all three subagents in the configuration
+Use outputFormat with zod-to-json-schema for structured outputs
+Aggregate subagent findings into the ReviewReport schema
+Handle potential agent failures gracefully
+5. CLI Application (src/main.ts)
+Complete the entry point with:
+
+Command-line argument parsing and validation (owner, repo, PR number)
+Environment variable validation (API credentials, model configuration)
+Orchestrator instantiation and reviewPullRequest invocation
+Report generation using ReportGenerator in three formats (JSON, Markdown, HTML)
+Error handling with meaningful user messages
+6. Error Handler (src/utils/error-handler.ts)
+Complete the error handling utility:
+
+Retry logic with exponential backoff - Implement withRetry function that retries failed operations with increasing delays and jitter
+Timeout wrapper - Implement withTimeout function using Promise.race to limit operation duration
+Custom ReviewError class and ErrorCodes enum are provided
+7. Rate Limiter (src/utils/rate-limiter.ts)
+Complete the rate limiting utility:
+
+Token bucket algorithm with sliding window - Track requests and tokens used in the last 60 seconds
+Core methods - Implement acquire, canProceed, waitForSlot, waitForRateLimit, and pruneOldRecords
+Concurrent request management - Respect maxConcurrent limit to prevent overwhelming the API
+Interfaces, configuration, and helper methods are provided
+8. Comprehensive Testing (tests/)
+Implement and pass all tests:
+
+Schema validation tests (Zod schemas accept valid data, reject invalid data)
+Edge case handling (empty arrays, boundary values)
+JSON schema export validation for SDK structured outputs
+Integration test demonstrating successful PR analysis
+9. Final Deliverables: PR Analysis Reports (reports/)
+REQUIRED FOR SUBMISSION: Generate comprehensive analysis reports for three specific pull requests from the udacity/cd14715-simple-todo-app repository:
+
+PR #1: "add clean code fixture" (merged)
+PR #2: "Add search functionality for todos" (open)
+PR #3: "Add premium subscription features" (open)
+For each PR, your system must generate all three report formats:
+
+JSON report (.json) - Structured data matching ReviewReport schema
+Markdown report (.md) - Human-readable formatted report
+HTML report (.html) - Web-viewable styled report
+Total required files: 9 reports (3 PRs × 3 formats)
+
+Quality requirements:
+
+All reports must contain populated data from agent analysis (not empty or undefined)
+Code quality issues must include specific file paths, line numbers, and severity levels
+Test coverage analysis must include specific suggestions for missing tests
+Refactoring suggestions must be actionable with code examples
+Overall scores must be calculated based on aggregated findings
+Reports must be well-formatted and render correctly
